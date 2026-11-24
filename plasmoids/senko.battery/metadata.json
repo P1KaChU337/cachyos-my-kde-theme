@@ -1,0 +1,14 @@
+{
+    "KPlugin": {
+        "Authors": [{ "Name": "senko" }],
+        "Category": "System Information",
+        "Description": "Pastel battery indicator",
+        "Icon": "battery-full",
+        "Id": "senko.battery",
+        "License": "GPL-2.0+",
+        "Name": "Senko Battery",
+        "Version": "1.0"
+    },
+    "KPackageStructure": "Plasma/Applet",
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

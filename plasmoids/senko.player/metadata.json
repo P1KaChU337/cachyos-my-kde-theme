@@ -1,0 +1,14 @@
+{
+    "KPlugin": {
+        "Authors": [{ "Name": "senko" }],
+        "Category": "Multimedia",
+        "Description": "Compact media player for the panel",
+        "Icon": "media-playback-start",
+        "Id": "senko.player",
+        "License": "GPL-2.0+",
+        "Name": "Senko Player",
+        "Version": "1.0"
+    },
+    "KPackageStructure": "Plasma/Applet",
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

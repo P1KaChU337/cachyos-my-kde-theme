@@ -1,0 +1,5 @@
+*.bak*
+*.orig*
+__pycache__/
+*.mp4
+*.webm

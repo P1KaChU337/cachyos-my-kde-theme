@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Kava Overlay
+Comment=Аудио-визуализатор CAVA у нижнего края экрана
+Exec=@HOME@/.local/share/kava-overlay/kava-overlay.py
+Icon=audio-x-generic
+X-KDE-autostart-phase=2
+NoDisplay=true

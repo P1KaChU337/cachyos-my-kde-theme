@@ -1,0 +1,14 @@
+{
+    "KPlugin": {
+        "Authors": [{ "Name": "senko" }],
+        "Category": "Date and Time",
+        "Description": "Rounded colorful panel clock with calendar",
+        "Icon": "preferences-system-time",
+        "Id": "senko.clock",
+        "License": "GPL-2.0+",
+        "Name": "Senko Clock",
+        "Version": "1.0"
+    },
+    "KPackageStructure": "Plasma/Applet",
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

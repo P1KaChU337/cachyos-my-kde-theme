@@ -1,0 +1,13 @@
+{
+    "KPlugin": {
+        "Authors": [{ "Name": "senko" }],
+        "Description": "Looping video wallpaper that pauses under maximized windows",
+        "Icon": "video-x-generic",
+        "Id": "senko.video",
+        "License": "GPL-2.0+",
+        "Name": "Senko Live Wallpaper",
+        "Version": "1.0"
+    },
+    "KPackageStructure": "Plasma/Wallpaper",
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

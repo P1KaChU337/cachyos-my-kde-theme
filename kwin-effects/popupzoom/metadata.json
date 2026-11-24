@@ -1,0 +1,13 @@
+{
+  "KPackageStructure": "KWin/Effect",
+  "KPlugin": {
+    "Authors": [{ "Name": "local" }],
+    "Category": "Appearance",
+    "Description": "Всплывающие окна панелей (меню, трей) раскрываются масштабированием от стороны панели",
+    "EnabledByDefault": false,
+    "Id": "popupzoom",
+    "License": "GPL",
+    "Name": "Popup Zoom"
+  },
+  "X-Plasma-API": "javascript"
+}

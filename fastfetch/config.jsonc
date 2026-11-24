@@ -1,0 +1,130 @@
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "logo": {
+    "padding": {
+      "top": 0,
+      "right": 3
+    }
+  },
+  "display": {
+    "separator": "  ",
+    "color": {
+      "keys": "magenta",
+      "title": "magenta"
+    },
+    "key": {
+      "width": 5
+    }
+  },
+  "modules": [
+    {
+      "type": "title",
+      "format": "{user-name-colored}\u001b[90m@\u001b[0m{host-name-colored}"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[1;35m󰣇  система \u001b[90m───────────────\u001b[0m"
+    },
+    {
+      "type": "os",
+      "key": "  󰣇",
+      "keyColor": "magenta",
+      "format": "{pretty-name} {arch}"
+    },
+    {
+      "type": "host",
+      "key": "  󰌢",
+      "keyColor": "magenta"
+    },
+    {
+      "type": "kernel",
+      "key": "  ",
+      "keyColor": "magenta"
+    },
+    {
+      "type": "uptime",
+      "key": "  󰅐",
+      "keyColor": "magenta"
+    },
+    {
+      "type": "packages",
+      "key": "  󰏖",
+      "keyColor": "magenta"
+    },
+    {
+      "type": "shell",
+      "key": "  ",
+      "keyColor": "magenta"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[1;95m󰏘  оформление \u001b[90m────────────\u001b[0m"
+    },
+    {
+      "type": "de",
+      "key": "  ",
+      "keyColor": "bright_magenta"
+    },
+    {
+      "type": "theme",
+      "key": "  󰏘",
+      "keyColor": "bright_magenta",
+      "format": "{theme1}"
+    },
+    {
+      "type": "icons",
+      "key": "  󰀻",
+      "keyColor": "bright_magenta",
+      "format": "{icons1}"
+    },
+    {
+      "type": "font",
+      "key": "  ",
+      "keyColor": "bright_magenta",
+      "format": "{font1}"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[1;36m  железо \u001b[90m────────────────\u001b[0m"
+    },
+    {
+      "type": "cpu",
+      "key": "  ",
+      "keyColor": "cyan",
+      "format": "{name}  \u001b[90m{cores-physical}c/{cores-logical}t · {freq-max}\u001b[0m"
+    },
+    {
+      "type": "gpu",
+      "key": "  󰢮",
+      "keyColor": "cyan",
+      "format": "{name}"
+    },
+    {
+      "type": "display",
+      "key": "  󰍹",
+      "keyColor": "cyan",
+      "compactType": "original-with-refresh-rate"
+    },
+    {
+      "type": "memory",
+      "key": "  󰍛",
+      "keyColor": "cyan"
+    },
+    {
+      "type": "disk",
+      "key": "  󰋊",
+      "keyColor": "cyan",
+      "folders": "/"
+    },
+    {
+      "type": "battery",
+      "key": "  󰁹",
+      "keyColor": "cyan"
+    },
+    {
+      "type": "colors",
+      "symbol": "circle",
+      "paddingLeft": 2
+    }
+  ]
+}

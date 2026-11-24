@@ -1,0 +1,14 @@
+{
+    "KPlugin": {
+        "Authors": [{ "Name": "senko" }],
+        "Category": "System Information",
+        "Description": "CPU temperature, fan speed and network speed",
+        "Icon": "utilities-system-monitor",
+        "Id": "senko.sysinfo",
+        "License": "GPL-2.0+",
+        "Name": "Senko SysInfo",
+        "Version": "1.0"
+    },
+    "KPackageStructure": "Plasma/Applet",
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

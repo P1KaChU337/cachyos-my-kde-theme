@@ -1,0 +1,107 @@
+--- a/contents/ui/main.qml	2026-11-22 11:44:17.000000000 +0500
++++ b/contents/ui/main.qml	2026-11-24 22:13:51.327267787 +0500
+@@ -616,8 +616,26 @@
+         if (!presetDir || presetDir === lastPreset)
+             return;
+         console.log("Reading preset:", presetDir);
+-        runCommand.exec("cat '" + presetDir + "/settings.json'");
+         lastPreset = presetDir;
++        // local patch: пресет из кэша применяется сразу (без ожидания процесса cat), файл перечитывается в фоне
++        const cached = presetCache[presetDir];
++        if (cached !== undefined) applyPresetText(cached);
++        runCommand.exec("cat '" + presetDir + "/settings.json'");
++    }
++    property var presetCache: ({})
++    property string lastAppliedPresetText: ""
++    function applyPresetText(text) {
++        if (text === lastAppliedPresetText) return;
++        try {
++            main.presetContent = JSON.parse(text);
++        } catch (e) {
++            console.error(`Error reading preset: ${e}`);
++            return;
++        }
++        lastAppliedPresetText = text;
++        Utils.loadPreset(main.presetContent, Plasmoid.configuration, Globals.ignoredConfigs, Globals.defaultConfig, true);
++        Plasmoid.configuration.lastPreset = main.lastPreset;
++        Plasmoid.configuration.writeConfig();
+     }
+ 
+     onPanelStateChanged: {
+@@ -782,15 +800,10 @@
+             }
+             stdout = stdout.trim();
+             if (cmd.startsWith("cat")) {
+-                try {
+-                    main.presetContent = JSON.parse(stdout);
+-                } catch (e) {
+-                    console.error(`Error reading preset (${cmd}): ${e}`);
+-                    return;
+-                }
+-                Utils.loadPreset(main.presetContent, Plasmoid.configuration, Globals.ignoredConfigs, Globals.defaultConfig, true);
+-                Plasmoid.configuration.lastPreset = main.lastPreset;
+-                Plasmoid.configuration.writeConfig();
++                const m = cmd.match(/^cat '(.*)\/settings\.json'$/);
++                if (m) main.presetCache[m[1]] = stdout;
++                // применяем, только если это всё ещё актуальный пресет
++                if (!m || m[1] === main.lastPreset) main.applyPresetText(stdout);
+             }
+             if (cmd === "plasmashell --version") {
+                 const parts = stdout.split(" ");
+@@ -993,4 +1006,56 @@
+         flags: Notification.Persistent
+         iconName: main.icon
+     }
++
++    // --- local patch: окно панели на всю ширину. Plasma прижимает всплывающие окна к краю окна панели
++    // (= краю экрана), поэтому для апплетов у краёв подставляем невидимый якорь у края видимой панели
++    readonly property bool popupAnchorEnabled: !!(main.panelBgItem && main.panelBgItem.dynWindow && main.panelBgItem.cfg?.margin?.fullWindow)
++    Component { id: popupAnchorComponent; Item { y: 0; height: parent ? parent.height : 0 } }
++    property var popupAnchors: ({})
++    property var popupOrigParents: ({})
++    function applyPopupAnchors() {
++        if (!main.panelLayout || !main.panelElement) return;
++        const W = main.panelElement.width;
++        const visL = main.panelBgItem?.fullMarginL ?? 0;
++        const visR = W - (main.panelBgItem?.fullMarginR ?? 0);
++        for (const c of main.panelLayout.children) {
++            const a = c.applet;
++            if (!a || !a.Plasmoid) continue;
++            const w = a.fullRepresentationItem ? a.fullRepresentationItem.Window.window : null;
++            if (!w || !("visualParent" in w)) continue;
++            // свои всплывающие окна анимирует эффект KWin popupzoom, слайд Plasma отключаем,
++            // иначе два эффекта одновременно гасят меню и оно мигает при закрытии
++            if (("animated" in w) && w.animated) w.animated = false;
++            const key = String(a.Plasmoid.id);
++            let anchor = main.popupAnchors[key];
++            const cx = c.mapToItem(main.panelElement, c.width / 2, 0).x;
++            const side = !main.popupAnchorEnabled ? 0 : (cx < W / 3 ? -1 : (cx > W * 2 / 3 ? 1 : 0));
++            if (side === 0) {
++                if (anchor && w.visualParent === anchor && main.popupOrigParents[key]) w.visualParent = main.popupOrigParents[key];
++                continue;
++            }
++            if (!anchor) {
++                anchor = popupAnchorComponent.createObject(main.panelElement);
++                main.popupAnchors[key] = anchor;
++            }
++            if (w.visualParent !== anchor) main.popupOrigParents[key] = w.visualParent;
++            const pw = Math.max(100, w.width - 2 * (w.margin ?? 0));
++            anchor.width = pw;
++            anchor.x = side < 0 ? Math.max(0, visL - 3) : Math.min(W - pw, visR + 3 - pw);
++            if (w.visualParent !== anchor) w.visualParent = anchor;
++        }
++    }
++    Timer { interval: 1000; repeat: true; running: true; onTriggered: main.applyPopupAnchors() }
++    // local patch: заранее читаем пресеты автозагрузки в кэш
++    Timer {
++        interval: 2500; running: true
++        onTriggered: {
++            const pa = main.presetAutoloading || {};
++            for (const k of Object.keys(pa)) {
++                const v = pa[k];
++                if (typeof v === "string" && v.startsWith("/") && main.presetCache[v] === undefined)
++                    runCommand.exec("cat '" + v + "/settings.json'");
++            }
++        }
++    }
+ }

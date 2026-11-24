@@ -1,0 +1,252 @@
+--- a/contents/ui/components/CustomBackground.qml	2026-11-22 11:44:17.000000000 +0500
++++ b/contents/ui/components/CustomBackground.qml	2026-11-24 22:08:35.970599706 +0500
+@@ -1,5 +1,6 @@
+ pragma ComponentBehavior: Bound
+ import QtQuick
++import QtQuick.Window
+ import QtQuick.Controls
+ import QtQuick.Effects
+ import QtQuick.Layouts
+@@ -269,13 +270,168 @@
+     }
+ 
+     Kirigami.Theme.colorSet: Kirigami.Theme[bgColorCfg.systemColorSet]
+-    color: {
+-        if (bgEnabled && rect.bgColorCfg.sourceType < 5) {
+-            return Utils.getColor(bgColorCfg, targetIndex, null, itemType, rect);
++    readonly property color bgFill: (bgEnabled && rect.bgColorCfg.sourceType < 5)
++        ? Utils.getColor(bgColorCfg, targetIndex, null, itemType, rect) : "transparent"
++    // в режиме dynamicWindow фон рисует dynBg (может выходить за пределы раскладки)
++    color: dynWindow ? "transparent" : bgFill
++
++    // --- local patch: inverse (concave) corners + dynamic panel window ---
++    // panel.normal.radius.inverse: <px>      — вогнутые углы у края экрана
++    // panel.normal.margin.dynamicWindow: true — окно панели само меняет длину
++    // panel.normal.margin.extend: <px>       — насколько фон выходит за раскладку (анимируется)
++    property int inverseRadiusTarget: (isPanel && cfgEnabled && horizontal) ? (cfg.radius?.inverse ?? 0) : 0
++    property real inverseRadiusAnim: inverseRadiusTarget
++    Behavior on inverseRadiusAnim { NumberAnimation { duration: 380; easing.type: Easing.OutCubic } }
++    property int inverseRadius: Math.round(inverseRadiusAnim)
++
++    property bool dynWindow: isPanel && horizontal && cfgEnabled && (cfg.margin?.dynamicWindow ?? false)
++    property real fullMarginL: (marginEnabled ? marginLeft : 0)
++    property real fullMarginR: (marginEnabled ? marginRight : 0)
++    property real fullMarginLAnim: fullMarginL
++    property real fullMarginRAnim: fullMarginR
++    Behavior on fullMarginLAnim { enabled: rect.isPanel && !rect.dynWindow; NumberAnimation { duration: 380; easing.type: Easing.OutCubic } }
++    Behavior on fullMarginRAnim { enabled: rect.isPanel && !rect.dynWindow; NumberAnimation { duration: 380; easing.type: Easing.OutCubic } }
++    readonly property real dynScreenWidth: Screen.width
++    // ширина берётся у родителя раскладки: он меняет размер в том же кадре, что и сама раскладка,
++    // поэтому компенсация не отстаёт на кадр-другой от реального размера окна
++    readonly property real dynHostWidth: rect.Window.width > 0 ? rect.Window.width : (main.panelView ? main.panelView.width : 0)
++    readonly property real dynWindowInset: (dynWindow && dynHostWidth > 0 && dynScreenWidth > 0)
++        ? Math.max(0, (dynScreenWidth - dynHostWidth) / 2) : 0
++    // раскладка виджетов: в режиме dynamicWindow стоит на месте (без анимации), компенсируя размер окна
++    property real panelMarginLAnim: dynWindow ? Math.max(0, fullMarginL - dynWindowInset) : fullMarginLAnim
++    property real panelMarginRAnim: dynWindow ? Math.max(0, fullMarginR - dynWindowInset) : fullMarginRAnim
++
++    property real extTarget: dynWindow ? (cfg.margin?.extend ?? 0) : 0
++    property real extAnim: extTarget
++    Behavior on extAnim { NumberAnimation { duration: 380; easing.type: Easing.OutCubic } }
++    readonly property real extApplied: dynWindow
++        ? Math.max(0, Math.min(extAnim, Math.min(panelMarginLAnim, panelMarginRAnim) - inverseRadius)) : 0
++    onExtAppliedChanged: updateMaskDebounced()
++
++    function dynSetWindowLength(len) {
++        const pv = main.panelView;
++        if (!pv || dynScreenWidth <= 0) return;
++        len = Math.round(len);
++        if (len >= dynScreenWidth - 1) {
++            if (pv.lengthMode !== 0) pv.lengthMode = 0; // FillAvailable
+         } else {
+-            return "transparent";
++            if (pv.lengthMode !== 2) pv.lengthMode = 2; // Custom
++            pv.maximumLength = len;
++            pv.minimumLength = len;
++            pv.maximumLength = len;
++        }
++    }
++    function dynWantedLength() {
++        // margin.fullWindow: окно всегда на всю ширину — без смены размера окна нет рывков при анимации
++        if (cfg.margin?.fullWindow ?? false) return dynScreenWidth;
++        const m = Math.min(fullMarginL, fullMarginR) - extTarget - Math.max(0, inverseRadiusTarget);
++        return dynScreenWidth - 2 * Math.max(0, m);
++    }
++    function dynUpdate() {
++        if (!dynWindow || !main.panelView || dynScreenWidth <= 0) return;
++        const wanted = dynWantedLength();
++        if (wanted > main.panelView.width + 0.5) {
++            dynSetWindowLength(wanted);   // расширяем сразу
++        } else if (Math.abs(extAnim - extTarget) < 0.5 && Math.abs(inverseRadiusAnim - inverseRadiusTarget) < 0.5) {
++            dynSetWindowLength(wanted);   // сужаем только когда анимация закончилась
++        }
++    }
++    onExtTargetChanged: Qt.callLater(dynUpdate)
++    onInverseRadiusTargetChanged: Qt.callLater(dynUpdate)
++    onExtAnimChanged: if (Math.abs(extAnim - extTarget) < 0.5) Qt.callLater(dynUpdate)
++    onInverseRadiusAnimChanged: if (Math.abs(inverseRadiusAnim - inverseRadiusTarget) < 0.5) Qt.callLater(dynUpdate)
++    onFullMarginLChanged: Qt.callLater(dynUpdate)
++    onDynWindowChanged: Qt.callLater(dynUpdate)
++    onDynScreenWidthChanged: Qt.callLater(dynUpdate)
++    Connections {
++        target: rect.main
++        function onPanelViewChanged() { Qt.callLater(rect.dynUpdate) }
++    }
++
++    Item { id: dynMaskItem; visible: false; width: rect.width + 2 * rect.extApplied; height: rect.height }
++    Rectangle {
++        id: dynBg
++        visible: rect.dynWindow
++        z: -1
++        x: -rect.extApplied
++        width: rect.width + 2 * rect.extApplied
++        height: rect.height
++        color: rect.bgFill
++        topLeftRadius: rect.topLeftRadius
++        topRightRadius: rect.topRightRadius
++        bottomLeftRadius: rect.bottomLeftRadius
++        bottomRightRadius: rect.bottomRightRadius
++    }
++
++    property bool inverseAtTop: main.panelPosition?.location === "top"
++    property int earMaskCount: 0
++    onInverseRadiusChanged: updateMaskDebounced()
++    onInverseAtTopChanged: updateMaskDebounced()
++    Item { id: earStrip; width: 1; height: 1; visible: false }
++    function earSpan(k, r) {
++        const dy = r - k - 0.5;
++        return Math.ceil(Math.sqrt(Math.max(0, r * r - dy * dy)));
++    }
++    function updateEarMasks() {
++        if (!isPanel || main.panelColorizer === null) return;
++        for (let i = 0; i < earMaskCount; i++) main.panelColorizer.removeMaskRegion(9000 + i);
++        earMaskCount = 0;
++        const r = inverseRadius;
++        if (r <= 0 || !(isVisible && blurBehind)) return;
++        const base = Utils.getGlobalPosition(borderRec, main.panelElement);
++        let idx = 0;
++        for (let side = 0; side < 2; side++) {
++            for (let k = 0; k < r; k++) {
++                const cx = earSpan(k, r);
++                const w = r - cx;
++                if (w <= 0) continue;
++                const ex = side === 0 ? -r + cx - extApplied : rect.width + extApplied;
++                const ey = inverseAtTop ? k : rect.height - 1 - k;
++                earStrip.width = w; earStrip.height = 1;
++                main.panelColorizer.updatePanelMask(9000 + idx, earStrip, 0, 0, 0, 0,
++                    Qt.point(base.x + ex - moveX, base.y + ey - moveY), 5, true);
++                idx++;
++            }
++        }
++        earMaskCount = idx;
++    }
++    Repeater {
++        model: rect.inverseRadius > 0 ? 2 : 0
++        delegate: Canvas {
++            id: ear
++            required property int index
++            readonly property int r: rect.inverseRadius
++            readonly property bool isLeft: index === 0
++            readonly property bool atTop: rect.inverseAtTop
++            readonly property color fill: rect.bgFill
++            width: r
++            height: r
++            x: isLeft ? -r - rect.extApplied : rect.width + rect.extApplied
++            y: atTop ? 0 : rect.height - r
++            antialiasing: true
++            onFillChanged: requestPaint()
++            onRChanged: requestPaint()
++            onAtTopChanged: requestPaint()
++            onPaint: {
++                const c = getContext("2d");
++                c.reset();
++                c.fillStyle = fill;
++                c.beginPath();
++                if (atTop && isLeft) {
++                    c.moveTo(r, 0); c.lineTo(r, r); c.arc(0, r, r, 0, -Math.PI / 2, true);
++                } else if (atTop) {
++                    c.moveTo(0, 0); c.lineTo(0, r); c.arc(r, r, r, Math.PI, Math.PI * 1.5, false);
++                } else if (isLeft) {
++                    c.moveTo(r, r); c.lineTo(r, 0); c.arc(0, 0, r, 0, Math.PI / 2, false);
++                } else {
++                    c.moveTo(0, r); c.lineTo(0, 0); c.arc(r, 0, r, Math.PI, Math.PI / 2, true);
++                }
++                c.closePath();
++                c.fill();
++            }
+         }
+     }
++    // --- end local patch ---
+ 
+     GradientRoundedRectangle {
+         stops: rect.bgColorCfg.gradient?.stops || []
+@@ -539,16 +695,14 @@
+         property: "anchors.leftMargin"
+         value: {
+             let margin = 0;
+-            if (rect.marginEnabled && rect.marginLeft !== 0) {
+-                margin = rect.marginLeft;
+-            }
++            margin = rect.isPanel ? rect.panelMarginLAnim : ((rect.marginEnabled && rect.marginLeft !== 0) ? rect.marginLeft : 0);
+             if (rect.main.fillAreaOnDeFloat && rect.main.panelElement?.floating && (rect.main.panelElement?.floatingness !== 1) && rect.horizontal) {
+                 margin -= (8 * (1 - rect.main.panelElement?.floatingness));
+             }
+             return margin;
+         }
+         when: rect.isPanel && rect.main.isEnabled
+-        delayed: true
++        delayed: !rect.dynWindow
+     }
+ 
+     Binding {
+@@ -556,16 +710,14 @@
+         property: "anchors.rightMargin"
+         value: {
+             let margin = 0;
+-            if (rect.marginEnabled && rect.marginRight !== 0) {
+-                margin = rect.marginRight;
+-            }
++            margin = rect.isPanel ? rect.panelMarginRAnim : ((rect.marginEnabled && rect.marginRight !== 0) ? rect.marginRight : 0);
+             if (rect.main.fillAreaOnDeFloat && rect.main.panelElement?.floating && (rect.main.panelElement?.floatingness !== 1) && rect.horizontal) {
+                 margin -= (8 * (1 - rect.main.panelElement?.floatingness));
+             }
+             return margin;
+         }
+         when: rect.isPanel && rect.main.isEnabled
+-        delayed: true
++        delayed: !rect.dynWindow
+     }
+ 
+     Binding {
+@@ -582,7 +734,7 @@
+             return margin;
+         }
+         when: rect.isPanel && rect.main.isEnabled
+-        delayed: true
++        delayed: !rect.dynWindow
+     }
+ 
+     Binding {
+@@ -599,7 +751,7 @@
+             return margin;
+         }
+         when: rect.isPanel && rect.main.isEnabled
+-        delayed: true
++        delayed: !rect.dynWindow
+     }
+ 
+     // Tray item / arrow
+@@ -1100,7 +1252,12 @@
+         if (borderRec.width <= 0 || borderRec.height <= 0)
+             return;
+         position = Utils.getGlobalPosition(borderRec, main.panelElement);
+-        main.panelColorizer.updatePanelMask(maskIndex, borderRec, rect.topLeftRadius, rect.topRightRadius, rect.bottomLeftRadius, rect.bottomRightRadius, Qt.point(rect.positionX - moveX, rect.positionY - moveY), 5, isVisible && blurBehind);
++        if (rect.dynWindow) {
++            main.panelColorizer.updatePanelMask(maskIndex, dynMaskItem, rect.topLeftRadius, rect.topRightRadius, rect.bottomLeftRadius, rect.bottomRightRadius, Qt.point(rect.positionX - moveX - rect.extApplied, rect.positionY - moveY), 5, isVisible && blurBehind);
++        } else {
++            main.panelColorizer.updatePanelMask(maskIndex, borderRec, rect.topLeftRadius, rect.topRightRadius, rect.bottomLeftRadius, rect.bottomRightRadius, Qt.point(rect.positionX - moveX, rect.positionY - moveY), 5, isVisible && blurBehind);
++        }
++        updateEarMasks();
+     }
+ 
+     property bool hovered: hoverHandler.hovered
