@@ -1,0 +1,17 @@
+[Wallpaper]
+defaultWallpaperTheme=Next
+defaultFileSuffix=.png
+defaultWidth=1920
+defaultHeight=1080
+
+[AdaptiveTransparency]
+enabled=true
+
+[ContrastEffect]
+enabled=true
+contrast=0.25
+intensity=1.0
+saturation=1.6
+
+[BlurBehindEffect]
+enabled=true

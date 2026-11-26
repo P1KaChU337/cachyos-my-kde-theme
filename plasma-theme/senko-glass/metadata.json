@@ -1,0 +1,18 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "senko"
+            }
+        ],
+        "Category": "",
+        "Description": "Breeze with glassy terminal-like popups (rgb 27,22,33 @ 0.78, blur, weak contrast)",
+        "EnabledByDefault": true,
+        "Id": "senko-glass",
+        "License": "LGPL",
+        "Name": "Senko Glass",
+        "Version": "6.30.0",
+        "Website": "https://www.kde.org/"
+    },
+    "X-Plasma-API": "5.0"
+}

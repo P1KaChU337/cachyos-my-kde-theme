@@ -35,6 +35,7 @@ top.addWidget("senko.clock");
 top.addWidget("org.kde.plasma.panelspacer");
 top.addWidget("senko.player");
 top.addWidget("senko.battery");
+top.addWidget("senko.legionmode");   // Lenovo Legion power-mode ring (needs lenovo-tune.service for the purple custom mode)
 top.addWidget("org.kde.plasma.systemtray");
 top.addWidget("org.kde.plasma.colorpicker");
 

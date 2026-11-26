@@ -1,0 +1,6 @@
+#!/bin/sh
+# 4 lines for the senko.legionmode widget: profile, cpu °C, gpu °C, AC online
+cat /sys/class/platform-profile/platform-profile-0/profile
+for z in /sys/class/thermal/thermal_zone*; do [ "$(cat $z/type)" = x86_pkg_temp ] && { echo $(( $(cat $z/temp) / 1000 )); break; }; done
+nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits 2>/dev/null | head -1 || echo 0
+cat /sys/class/power_supply/ADP0/online

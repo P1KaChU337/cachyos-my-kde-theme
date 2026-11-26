@@ -58,6 +58,10 @@ say "Эффекты KWin"
 EF="$HOME/.local/share/kwin/effects"; mkdir -p "$EF"
 for e in "$THEME"/kwin-effects/*; do rm -rf "$EF/$(basename "$e")"; cp -r "$e" "$EF/"; done
 
+say "Оформление Plasma «Senko Glass» (стеклянные всплывающие окна)"
+DT="$HOME/.local/share/plasma/desktoptheme"; mkdir -p "$DT"
+rm -rf "$DT/senko-glass"; cp -r "$THEME/plasma-theme/senko-glass" "$DT/"
+
 mkdir -p "$HOME/.local/share/cachyos-my-kde-theme"
 cp "$THEME"/assets/* "$HOME/.local/share/cachyos-my-kde-theme/"
 
@@ -112,6 +116,8 @@ gsettings set org.gnome.desktop.interface font-name 'Nunito 10' 2>/dev/null || t
 gsettings set org.gnome.desktop.interface monospace-font-name 'Maple Mono NF 10' 2>/dev/null || true
 dbus-send --session --type=signal /KGlobalSettings org.kde.KGlobalSettings.notifyChange int32:1 int32:0 || true
 qdbus6 org.kde.KWin /KWin reconfigure >/dev/null 2>&1 || true
+backup "$HOME/.config/plasmarc"
+plasma-apply-desktoptheme senko-glass >/dev/null 2>&1 || true   # откат: plasma-apply-desktoptheme default
 
 # ---------- обои ----------
 WALLDIR="$HOME/.local/share/wallpapers/senko-live"

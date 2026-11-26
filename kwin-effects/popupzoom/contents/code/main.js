@@ -31,6 +31,21 @@ class PopupZoom {
         this.fadeOut = animationTime(150) * 4;
     }
 
+    // KWin's blur/contrast skip transformed (scaled/translated) windows unless forced,
+    // so without this the glass background pops in only after the animation ends
+    forceGlass(w, on) {
+        w.setData(Effect.WindowForceBlurRole, on ? true : null);
+        w.setData(Effect.WindowForceBackgroundContrastRole, on ? true : null);
+    }
+
+    // Blur/contrast normally skip transformed windows. For panel popups and KRunner we just
+    // keep them forced for the window's whole life: when the window is not being animated
+    // this changes nothing, and during any animation (our zoom or KWin's Sliding Popups)
+    // the glass stays. (A timer via a no-op animation kept closed windows alive -> double close.)
+    isGlassWindow(w) {
+        return w.appletPopup || String(w.windowClass).indexOf("krunner") !== -1;
+    }
+
     // смещение, при котором край со стороны панели остаётся на месте
     anchorOffset(w, s) {
         const scr = effects.virtualScreenGeometry;
@@ -43,6 +58,7 @@ class PopupZoom {
 
     added(w) {
         if (effects.hasActiveFullScreenEffect || !w.visible) return;
+        if (this.isGlassWindow(w)) this.forceGlass(w, true);
         if (isPlainPopup(w)) {
             if (effect.grab(w, Effect.WindowAddedGrabRole))
                 animate({ window: w, curve: QEasingCurve.Linear, duration: this.fadeIn, type: Effect.Opacity, from: 0, to: 1 });

@@ -1,0 +1,14 @@
+{
+    "KPlugin": {
+        "Authors": [{ "Name": "senko" }],
+        "Category": "System Information",
+        "Description": "Legion power mode ring (Fn+Q colours) with custom game profile",
+        "Icon": "speedometer",
+        "Id": "senko.legionmode",
+        "License": "GPL-2.0+",
+        "Name": "Senko Legion Mode",
+        "Version": "1.0"
+    },
+    "KPackageStructure": "Plasma/Applet",
+    "X-Plasma-API-Minimum-Version": "6.0"
+}
