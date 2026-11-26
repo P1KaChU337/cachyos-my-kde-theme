@@ -11,7 +11,20 @@ PlasmoidItem {
     preferredRepresentation: fullRepresentation
     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
 
-    Sensors.Sensor { id: cpuTemp; sensorId: "cpu/all/averageTemperature"; updateRateLimit: 2000 }
+    // CPU package temperature (x86_pkg_temp) — the hottest point of the die, what throttling uses.
+    // ksystemstats only offers per-core average/max, which reads ~10 °C lower under load.
+    QtObject { id: cpuTemp; property real value: 0 }
+    P5Support.DataSource {
+        id: pkgTemp
+        engine: "executable"
+        readonly property string cmd: "sh -c 'for z in /sys/class/thermal/thermal_zone*; do [ \"$(cat $z/type)\" = x86_pkg_temp ] && { cat $z/temp; break; }; done'"
+        onNewData: (source, data) => {
+            const v = parseInt(data["stdout"]);
+            if (isFinite(v)) cpuTemp.value = v / 1000;
+            disconnectSource(source);
+        }
+    }
+    Timer { interval: 2000; running: true; repeat: true; triggeredOnStart: true; onTriggered: pkgTemp.connectSource(pkgTemp.cmd) }
     Sensors.Sensor { id: cpuLoad; sensorId: "cpu/all/usage"; updateRateLimit: 2000 }
     Sensors.Sensor { id: gpuTemp; sensorId: "gpu/gpu0/temperature"; updateRateLimit: 2000 }
     Sensors.Sensor { id: gpuLoad; sensorId: "gpu/gpu0/usage"; updateRateLimit: 2000 }
